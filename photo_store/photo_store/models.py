@@ -7,6 +7,7 @@ class Photo(models.Model):
 class Size(models.Model):
     label = models.CharField(max_length = 50)
     price = models.DecimalField(max_digits = 8, decimal_places = 2)
+    shipping_cost = models.DecimalField(max_digits = 8, decimal_places = 2, default = 0)
 
 class Region(models.Model):
 	name = models.CharField(max_length = 50)
