@@ -49,7 +49,7 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
-ROOT_URLCONF = 'photo_store.urls'
+ROOT_URLCONF = 'storefront.urls'
 
 TEMPLATES = [
     {
@@ -67,7 +67,7 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = 'photo_store.wsgi.application'
+WSGI_APPLICATION = 'storefront.wsgi.application'
 
 
 # Database

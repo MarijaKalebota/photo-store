@@ -1,4 +1,4 @@
-"""photo_store URL Configuration
+"""storefront URL Configuration
 
 The `urlpatterns` list routes URLs to views. For more information please see:
     https://docs.djangoproject.com/en/2.2/topics/http/urls/
@@ -14,10 +14,10 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.contrib import admin
-from django.urls import path
+from django.urls import path, include
 from . import views
 
 urlpatterns = [
-    path('order/', views.order, name='order'),
-    path('photos/', views.photos, name='photos'),
+    path('admin/', admin.site.urls),
+    path('photo-store/', include('photo_store.urls')),
 ]
