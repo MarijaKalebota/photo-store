@@ -1,4 +1,5 @@
 from django.db import models
+from django.utils import timezone
 
 class Photo(models.Model):
     name = models.CharField(max_length = 50)
@@ -18,9 +19,9 @@ class Country(models.Model):
 # TODO(MarijaKalebota) Extract user and shipping details into 
 # separate tables for potential reuse
 class Order(models.Model):
-    timestamp = models.DateTimeField()
-    photo_id = models.ForeignKey(Photo, on_delete = models.DO_NOTHING)
-    size_id = models.ForeignKey(Size, on_delete = models.DO_NOTHING)
+    timestamp = models.DateTimeField(default = timezone.now)
+    photo = models.ForeignKey(Photo, on_delete = models.DO_NOTHING)
+    size = models.ForeignKey(Size, on_delete = models.DO_NOTHING)
 
     first_name = models.CharField(max_length = 50)
     last_name = models.CharField(max_length = 50)
