@@ -52,21 +52,33 @@ def order(request):
     else:
         return HttpResponse(status=400)
 
+@csrf_exempt
 def photos(request):
-    photos = models.Photo.objects.all()
-    
-    if (request.GET.get('page')):
-        page = request.GET.get('page')
-        paginator = Paginator(photos, 20)
-        photos = paginator.page(page)
-    
-    if(request.GET.get('names') == "True"):
-        encoded_photos = [photo.name for photo in photos]
-    else:
-        binary_photos = [photo.data.read() for photo in photos]
-        encoded_photos = [str(base64.b64encode(photo)) for photo in binary_photos]
+    if(request.method == "GET"):
+        photos = models.Photo.objects.all().order_by("id")
 
-    response_data = {
-            "photos" : encoded_photos,
+        if (request.GET.get('page')):
+            page = request.GET.get('page')
+            paginator = Paginator(photos, 20)
+            photos = paginator.page(page)
+        
+        if(request.GET.get('names') == "True"):
+            encoded_photos = [photo.name for photo in photos]
+        else:
+            binary_photos = [photo.data.read() for photo in photos]
+            encoded_photos = [str(base64.b64encode(photo)) for photo in binary_photos]
+        
+        photos_with_ids = []
+        for i in range(len(encoded_photos)):
+            photo_with_id = {
+                "id" : photos[i].id,
+                "photo" : encoded_photos[i],
             }
-    return JsonResponse(response_data)
+            photos_with_ids.append(photo_with_id)
+
+        response_data = {
+                "photos" : photos_with_ids,
+                }
+        return JsonResponse(response_data)
+    else:
+        return HttpResponse(status=400)
