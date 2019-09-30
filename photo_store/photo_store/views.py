@@ -1,16 +1,9 @@
 from django.shortcuts import render
 from django.http import HttpResponse, JsonResponse
 from django.views.decorators.csrf import csrf_exempt
+from django.core.paginator import Paginator
 from . import models
-
-def create_dummy_data():
-    photo1 = models.Photo(name = "photo1", data = "dnsfnj")
-    photo1.save()
-    region1 = models.Region(name = "reg1")
-    region1.save()
-    country1 = models.Country(name = "usa")
-    country1.save()
-
+import base64
 
 @csrf_exempt
 def order(request):
@@ -60,4 +53,20 @@ def order(request):
         return HttpResponse(status=400)
 
 def photos(request):
-    return HttpResponse('Returning all photos')
+    photos = models.Photo.objects.all()
+    
+    if (request.GET.get('page')):
+        page = request.GET.get('page')
+        paginator = Paginator(photos, 20)
+        photos = paginator.page(page)
+    
+    if(request.GET.get('names') == "True"):
+        encoded_photos = [photo.name for photo in photos]
+    else:
+        binary_photos = [photo.data.read() for photo in photos]
+        encoded_photos = [str(base64.b64encode(photo)) for photo in binary_photos]
+
+    response_data = {
+            "photos" : encoded_photos,
+            }
+    return JsonResponse(response_data)
