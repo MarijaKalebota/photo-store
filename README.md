@@ -1,7 +1,7 @@
 # photo-store
 A storefront API for ordering prints of photographs.
 
-Written in Python using the Django framework.
+Written in Python using the Django framework, SQLite database and CircleCI.
 
 ## Set up
 
