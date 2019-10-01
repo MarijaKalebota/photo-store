@@ -69,6 +69,11 @@ class TestPhotos(TestCase):
             "city": "Los Angeles",
             "postal_code": "22222",
         }
+        self.correct_order_response = {
+            "total_price": "14.99",
+            "shipping_cost": "4.99",
+            "print_price": "10.00",
+        }
 
     def test_photos_get_status_code_200(self):
         response = self.client.get(self.photos_url)
@@ -105,16 +110,46 @@ class TestPhotos(TestCase):
 
     def test_photos_return_error_when_page_number_too_big(self):
         response = self.client.get("{}?page=6".format(self.photos_url))
-        self.assertEquals(response.content.decode(), "Page number is too big")
+        self.assertEquals(response.content.decode(), "Page number is too big.")
 
     def test_order_get_status_code_400(self):
         response = self.client.get(self.order_url)
         self.assertEquals(response.status_code, 400, response.content)
 
-    def test_order_post_status_code_201(self):
+    def test_order_post_correct_response(self):
         response = self.client.post(
             self.order_url, self.correct_order_form_data)
+        response_dict = dict_from_bytestring(response.content)
+        self.assertEquals(len(response_dict), 4)
+        self.assertTrue(response_dict["order_number"])
+        for key in list(self.correct_order_response.keys()):
+            self.assertTrue(response_dict[key])
+            self.assertEquals(
+                response_dict[key], self.correct_order_response[key])
         self.assertEquals(response.status_code, 201, response.content)
 
-    # TODO(MarijaKalebota) test responses with incorrect input
-    # TODO(MarijaKalebota) do not allow DB to save if transaction was unsuccessful
+    def test_order_post_empty_input(self):
+        form_data = self.correct_order_form_data
+        form_data["photo_id"] = ""
+        response = self.client.post(self.order_url, form_data)
+        self.assertEquals(response.status_code, 400, response.content)
+        self.assertEquals(response.content.decode(),
+                          "Parameter \"photo_id\" needs a value.")
+
+    def test_order_post_too_long_input(self):
+        form_data = self.correct_order_form_data
+        form_data["city"] = "abcdabcdabcdabcdabcdabcdabcdabcdabcdabcdabcdabcdabcdabcd"
+        response = self.client.post(self.order_url, form_data)
+        self.assertEquals(response.status_code, 400, response.content)
+        self.assertEquals(response.content.decode(
+        ), "Parameter \"city\" length should be no more than 50.")
+
+    def test_order_post_request_for_nonexistent_resource(self):
+        form_data = self.correct_order_form_data
+        form_data["size_id"] = "4"
+        response = self.client.post(self.order_url, form_data)
+        self.assertEquals(response.status_code, 400, response.content)
+        self.assertEquals(response.content.decode(),
+                          "Requested size not found.")
+
+    # TODO(MarijaKalebota) write tests for code that remains uncovered
