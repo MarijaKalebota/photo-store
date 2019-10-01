@@ -1,41 +1,49 @@
-from django.test import TestCase, Client
-from django.http import JsonResponse
 import json
+
+from django.http import JsonResponse
+from django.test import Client, TestCase
+
 from . import models
 
 PAGE_SIZE = 20
 
+
 def populate_db_with_images():
-   for i in range(1,101):
-       name = "image_{:0>4}".format(i)
-       data = "{}.jpg".format(name)
-       photo = models.Photo(name = name, data = data)
-       photo.save()
+    for i in range(1, 101):
+        name = "image_{:0>4}".format(i)
+        data = "{}.jpg".format(name)
+        photo = models.Photo(name=name, data=data)
+        photo.save()
+
 
 def populate_db_with_image_sizes():
-    size_small = models.Size(label="small", price = 10, shipping_cost = 4.99)
+    size_small = models.Size(label="small", price=10, shipping_cost=4.99)
     size_small.save()
-    size_medium = models.Size(label="medium", price = 15, shipping_cost = 5.99)
+    size_medium = models.Size(label="medium", price=15, shipping_cost=5.99)
     size_medium.save()
-    size_large = models.Size(label="large", price = 20, shipping_cost = 7.99)
+    size_large = models.Size(label="large", price=20, shipping_cost=7.99)
     size_large.save()
+
 
 def populate_db_with_regions():
     for i in range(1, 11):
         region_name = "region_{:0>3}".format(i)
-        region = models.Region(name = region_name)
+        region = models.Region(name=region_name)
         region.save()
+
 
 def populate_db_with_countries():
     for i in range(1, 196):
         country_name = "country_{:0>4}".format(i)
-        country = models.Country(name = country_name)
+        country = models.Country(name=country_name)
         country.save()
+
 
 def dict_from_bytestring(bytestring):
     string_format = bytestring.decode()
     dict_format = json.loads(string_format)
     return dict_format
+
 
 class TestPhotos(TestCase):
 
@@ -48,18 +56,18 @@ class TestPhotos(TestCase):
         self.photos_url = '/photo-store/photos/'
         self.order_url = '/photo-store/order/'
         self.correct_order_form_data = {
-            "first_name" : "Marija",
-            "last_name" : "Kalebota Kodzoman",
-            "size_id" : "1",
-            "photo_id" : "1",
-            "region_id" : "1",
-            "country_id" : "1",
-            "email" : "marija@example.com",
-            "phone" : "1111111111",
-            "addr1" : "Marija Addr1",
-            "addr2" : "Marija Addr2",
-            "city" : "Los Angeles",
-            "postal_code" : "22222",
+            "first_name": "Marija",
+            "last_name": "Kalebota Kodzoman",
+            "size_id": "1",
+            "photo_id": "1",
+            "region_id": "1",
+            "country_id": "1",
+            "email": "marija@example.com",
+            "phone": "1111111111",
+            "addr1": "Marija Addr1",
+            "addr2": "Marija Addr2",
+            "city": "Los Angeles",
+            "postal_code": "22222",
         }
 
     def test_photos_get_status_code_200(self):
@@ -94,7 +102,7 @@ class TestPhotos(TestCase):
         response_dict = dict_from_bytestring(response.content)
         number_of_photos_in_response = len(response_dict["photos"])
         self.assertEquals(number_of_photos_in_response, PAGE_SIZE)
-    
+
     def test_photos_return_error_when_page_number_too_big(self):
         response = self.client.get("{}?page=6".format(self.photos_url))
         self.assertEquals(response.content.decode(), "Page number is too big")
@@ -104,7 +112,8 @@ class TestPhotos(TestCase):
         self.assertEquals(response.status_code, 400, response.content)
 
     def test_order_post_status_code_201(self):
-        response = self.client.post(self.order_url, self.correct_order_form_data)
+        response = self.client.post(
+            self.order_url, self.correct_order_form_data)
         self.assertEquals(response.status_code, 201, response.content)
 
     # TODO(MarijaKalebota) test responses with incorrect input
