@@ -105,6 +105,3 @@ venv.bak/
 
 # Visual Studio Code
 .vscode
-
-# Images
-photo_store/images
