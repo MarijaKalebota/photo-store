@@ -8,7 +8,7 @@ jobs:
     docker:
       # specify the version you desire here
       # use `-browsers` prefix for selenium tests, e.g. `3.6.1-browsers`
-      - image: circleci/python:3.6.1
+      - image: circleci/python:3.5
 
       # Specify service dependencies here if necessary
       # CircleCI maintains a library of pre-built images
@@ -30,6 +30,7 @@ jobs:
       - run:
           name: install dependencies
           command: |
+            sudo python3 -m pip install pipenv
             python3 -m pipenv install
       - save_cache:
           paths:
@@ -44,8 +45,7 @@ jobs:
       - run:
           name: run tests
           command: |
-            python3 -m pipenv shell
-            python manage.py test
+            python3 -m pipenv run photo_store/manage.py test
       - store_artifacts:
           path: test-reports
           destination: test-reports
