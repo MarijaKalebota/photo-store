@@ -94,6 +94,10 @@ class TestPhotos(TestCase):
         response_dict = dict_from_bytestring(response.content)
         number_of_photos_in_response = len(response_dict["photos"])
         self.assertEquals(number_of_photos_in_response, PAGE_SIZE)
+    
+    def test_photos_return_error_when_page_number_too_big(self):
+        response = self.client.get(self.photos_url + "?page=6")
+        self.assertEquals(response.content.decode(), "Page number is too big")
 
     def test_order_get_status_code_400(self):
         response = self.client.get(self.order_url)
@@ -102,3 +106,6 @@ class TestPhotos(TestCase):
     def test_order_post_status_code_201(self):
         response = self.client.post(self.order_url, self.correct_order_form_data)
         self.assertEquals(response.status_code, 201)
+
+    #TODO test responses with incorrect input
+    #TODO do not allow DB to save if transaction was unsuccessful

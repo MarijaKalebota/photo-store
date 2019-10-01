@@ -2,6 +2,9 @@ from django.shortcuts import render
 from django.http import HttpResponse, JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.core.paginator import Paginator
+from django.core.exceptions import ValidationError
+from django.core.validators import validate_email
+from django.db import IntegrityError, transaction
 from . import models
 import base64
 
@@ -9,46 +12,92 @@ import base64
 def order(request):
     if request.method == "POST":
 
-        photo_id = request.POST.get("photo_id")
-        size_id = request.POST.get("size_id")
+        params_text_with_error_messages = [
+            ("first_name", "First name too long"),
+            ("last_name", "Last name too long"),
+            ("addr1", "Address line 1 is too long"),
+            ("addr2", "Address line 2 is too long"),
+            ("city", "City name too long"),
+        ]
+
+        params_id_with_error_messages = [
+            ("photo_id", models.Photo.objects, models.Photo.DoesNotExist, "Photo does not exist."),
+            ("size_id", models.Size.objects, models.Size.DoesNotExist, "Size does not exist."),
+            ("region_id", models.Region.objects, models.Region.DoesNotExist, "Region does not exist."),
+            ("country_id", models.Country.objects, models.Country.DoesNotExist, "Country does not exist."),
+        ]
+
+        values = {}
+
+        for param, error_msg in params_text_with_error_messages:
+            param_value = request.POST.get(param)
+            if param_value is None or param_value == '':
+                return HttpResponse("Field \"{}\" must be set".format(param), status = 400)
+            if  len(param_value) > 50:
+                return HttpResponse(error_msg, status = 400)
+            values[param] = param_value
         
-        first_name = request.POST.get("first_name")
-        last_name = request.POST.get("last_name")
+        for param, param_objects, param_error, error_msg in params_id_with_error_messages:
+            param_value = request.POST.get(param)
+            if param_value is None or param_value == '':
+                return HttpResponse("Field \"{}\" must be set".format(param), status = 400)
+            try:
+                param_objects.get(id=param_value)
+            except param_error:
+                return HttpResponse(error_msg, status = 400)
+
+            values[param] = param_value
+ 
         email = request.POST.get("email")
+        if email is None or email == '':
+            return HttpResponse("Field \"email\" must be set", status = 400)
+        try:
+            validate_email(email)
+        except ValidationError:
+            return HttpResponse("Invalid email.", status=400)
         phone = request.POST.get("phone")
-        addr1 = request.POST.get("addr1")
-        addr2 = request.POST.get("addr2")
-        city = request.POST.get("city")
-        region_id = request.POST.get("region_id")
+        if phone is None or phone == '':
+            return HttpResponse("Field \"phone\" must be set", status = 400)
         postal_code = request.POST.get("postal_code")
-        country_id = request.POST.get("country_id")
+        if phone is None or phone == '':
+            return HttpResponse("Field \"postal_code\" must be set", status = 400)
+        try:
+            int(postal_code)
+        except ValueError:
+            return HttpResponse("Invalid postal code. Please only input digits.", status=400)
 
         new_order = models.Order(
-            photo_id = photo_id,
-            size_id = size_id,
-            first_name = first_name,
-            last_name = last_name,
+            photo_id = values["photo_id"],
+            size_id = values["size_id"],
+            first_name = values["first_name"],
+            last_name = values["last_name"],
             email = email,
             phone = phone,
-            addr1 = addr1,
-            addr2 = addr2,
-            city = city,
-            region_id = region_id,
+            addr1 = values["addr1"],
+            addr2 = values["addr2"],
+            city = values["city"],
+            region_id = values["region_id"],
             postal_code = postal_code,
-            country_id = country_id
+            country_id = values["country_id"],
             )
 
-        new_order.save()
+        try:
+            with transaction.atomic():
+                new_order.save()
 
-        order_number = new_order.id
-        print_size = models.Size.objects.get(id=new_order.size_id)
-        total_price = print_size.price + print_size.shipping_cost
+                order_number = new_order.id
+                print_size = models.Size.objects.get(id=new_order.size_id)
+                total_price = print_size.price + print_size.shipping_cost
 
-        response_data = {
-            "order_number" : order_number,
-            "total_price" : total_price
-            }
-        return JsonResponse(response_data, status=201)
+                response_data = {
+                    "order_number" : order_number,
+                    "print_price" : print_size.price,
+                    "shipping_cost" : print_size.shipping_cost,
+                    "total_price" : total_price
+                    }
+                return JsonResponse(response_data, status=201)
+        except IntegrityError:
+            return HttpResponse("Transaction unsuccessful, please try again", status=400)
     else:
         return HttpResponse(status=400)
 
@@ -59,6 +108,10 @@ def photos(request):
 
         if (request.GET.get('page')):
             page = request.GET.get('page')
+            if page is None or page == '':
+                return HttpResponse("Field \"page\" incorrectly set", status = 400)
+            if int(page) > 5:
+                return HttpResponse("Page number is too big", status = 400)
             paginator = Paginator(photos, 20)
             photos = paginator.page(page)
         
